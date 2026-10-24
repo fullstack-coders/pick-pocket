@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL Database Container
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: postgres-db
+    restart: always
+    environment:
+      POSTGRES_DB: app_db
+      POSTGRES_USER: db_user
+      POSTGRES_PASSWORD: secure_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  # 2. Spring Boot Backend Container
+  backend-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: backend-app
+    restart: always
+    depends_on:
+      - postgres-db
+    ports:
+      - "8081:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/app_db
+      - SPRING_DATASOURCE_USERNAME=db_user
+      - SPRING_DATASOURCE_PASSWORD=secure_password
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge
